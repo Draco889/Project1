@@ -1,0 +1,72 @@
+{
+    "comPort": "/dev/ttyUSB0",
+    "logFilename": "logfile.txt",
+    "waterDoser":
+    {
+        "controller": 3,
+        "motor":
+        {
+            "number": 3,
+            "openDirection": 1,
+            "openDuration": 8,
+            "closeDirection": 0,
+            "closeDuration": 8
+        }
+    },
+    "materialDoser":
+    {
+        "controller": 3,
+        "topMotor":
+        {
+            "number": 0,
+            "openDirection": 1,
+            "openDuration": 3,
+            "closeDirection": 0,
+            "closeDuration": 3 
+        },
+        "bottomMotor":
+        {
+            "number": 1,
+            "openDirection": 0,
+            "openDuration": 3,
+            "closeDirection": 1,
+            "closeDuration": 3 
+        }
+    },
+    "dischargeValve":
+    {
+        "controller": 3,
+        "motor":
+        {
+            "number": 2,
+            "openDirection": 1,
+            "openDuration": 30,
+            "closeDirection": 0,
+            "closeDuration": 30
+        }
+    },
+    "materialBunker":
+    {
+        "controller": 0,
+        "motor":
+        {
+            "number": 5,
+            "direction": 1,
+            "duration": 15
+        }
+    },
+    "mixer":
+    {
+        "controller": 0,
+        "forwardSwitch":
+        {
+            "number": 6
+        },
+        "reverseSwitch":
+        {
+            "number": 7
+        },
+        "materialRemovalTime": 60,
+        "deadTime": 10
+    }
+}
