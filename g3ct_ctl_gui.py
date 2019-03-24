@@ -34,12 +34,14 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopHeaderLabel = QLabel("MIXER", self)
         self.startStopHeaderLabel.setAlignment(Qt.AlignCenter)
         self.startStopButton = QPushButton('Start Mixer', self)
+        self.startStopStopButton = QPushButton("Stop")
+        self.startStopStopButton.setEnabled(False)
         self.startStopButton.clicked.connect(self.startStopClickMethod)
         self.startStopStateLabel = QLabel("idle", self)
         self.startStopStateLabel.setAlignment(Qt.AlignCenter)
-        self.startStopAutoCheck = QCheckBox("Auto Run", self)
-        self.startStopAutoCheck.stateChanged.connect(self.startStopAutoStateChange)
-        self.startStopAutoCheck.setChecked(False)
+        #self.startStopAutoCheck = QCheckBox("Auto Run", self)
+        #self.startStopAutoCheck.stateChanged.connect(self.startStopAutoStateChange)
+        #self.startStopAutoCheck.setChecked(False)
         self.startStopPeriod = QTimeEdit(self)
         self.startStopPeriod.setTimeSpec(Qt.LocalTime)
         self.startStopPeriod.setDisplayFormat('hh:mm:ss')
@@ -50,19 +52,21 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopPeriod.setEnabled(False)
         self.startStopCountDownLabel = QLabel("", self)
         # temporary
-        self.startStopAutoCheck.setEnabled(False)
+        #self.startStopAutoCheck.setEnabled(False)
         self.startStopPeriod.setEnabled(False)
         self.startStopButton.setEnabled(False)
 
         self.addMaterialHeaderLabel = QLabel("SUPPLY", self)
         self.addMaterialHeaderLabel.setAlignment(Qt.AlignCenter)
         self.addMaterialButton = QPushButton('Add Material', self)
+        self.addMaterialStopButton = QPushButton("Stop")
+        self.addMaterialStopButton.setEnabled(False)
         self.addMaterialButton.clicked.connect(self.addMaterialClickMethod)
         self.addMaterialStateLabel = QLabel("idle", self)
         self.addMaterialStateLabel.setAlignment(Qt.AlignCenter)
-        self.addMaterialAutoCheck = QCheckBox("Auto Run", self)
-        self.addMaterialAutoCheck.stateChanged.connect(self.addMaterialAutoStateChange)
-        self.addMaterialAutoCheck.setChecked(False)
+        #self.addMaterialAutoCheck = QCheckBox("Auto Run", self)
+        #self.addMaterialAutoCheck.stateChanged.connect(self.addMaterialAutoStateChange)
+        #self.addMaterialAutoCheck.setChecked(False)
         self.addMaterialPeriod = QTimeEdit(self)
         self.addMaterialPeriod.setTimeSpec(Qt.LocalTime)
         self.addMaterialPeriod.setDisplayFormat('hh:mm:ss')
@@ -72,25 +76,30 @@ class G3CTCtlWindow(QMainWindow):
         self.addMaterialPeriod.setTime(min_time)
         self.addMaterialPeriod.setEnabled(False)
         self.addMaterialCountDownLabel = QLabel("", self)
-        self.addMaterialRepeatCheck = QCheckBox("Repeat Limit", self)
-        self.addMaterialRepeatCheck.stateChanged.connect(self.addMaterialRepeatStateChange)
-        self.addMaterialRepeatCheck.setChecked(False)
+        #self.addMaterialRepeatCheck = QCheckBox("Repeat Limit", self)
+        #self.addMaterialRepeatCheck.stateChanged.connect(self.addMaterialRepeatStateChange)
+        #self.addMaterialRepeatCheck.setChecked(False)
+        self.materialRepeatCountLabel = QLabel("Repeat Count")
         self.addMaterialRepeatCount = QSpinBox(self)
-        self.addMaterialRepeatCount.setMinimum(1)
+        self.addMaterialRepeatCount.setMinimum(0)
         self.addMaterialRepeatCount.setMaximum(1000)
-        self.addMaterialRepeatCount.setEnabled(False)
+        self.addMaterialRepeatCount.setEnabled(True)
         self.addMaterialRepeatCount.valueChanged.connect(self.addMaterialRepeatCountChange)
         self.addMaterialRepeatLabel = QLabel("", self)
 
         self.addWaterHeaderLabel = QLabel("WATER", self)
         self.addWaterHeaderLabel.setAlignment(Qt.AlignCenter)
         self.addWaterButton = QPushButton('Add Water', self)
-        self.addWaterButton.clicked.connect(self.addWaterClickMethod)
+        self.addWaterStopButton = QPushButton("Stop")
+        self.addWaterStopButton.setEnabled(False)
+        #self.addWaterButton.clicked.connect(self.addWaterClickMethod)
         self.addWaterStateLabel = QLabel("idle", self)
         self.addWaterStateLabel.setAlignment(Qt.AlignCenter)
-        self.addWaterAutoCheck = QCheckBox("Auto Run", self)
-        self.addWaterAutoCheck.stateChanged.connect(self.addWaterAutoStateChange)
-        self.addWaterAutoCheck.setChecked(False)
+        #self.addWaterAutoCheck = QCheckBox("Auto Run", self)
+        self.addWaterButton.clicked.connect(lambda: self.addWaterAutoStateChange(True))
+        self.addWaterStopButton.clicked.connect(lambda: self.addWaterAutoStateChange(False))
+        self.waterState = False
+        #self.addWaterAutoCheck.setChecked(False)
         self.addWaterPeriod = QTimeEdit(self)
         self.addWaterPeriod.setTimeSpec(Qt.LocalTime)
         self.addWaterPeriod.setDisplayFormat('hh:mm:ss')
@@ -98,27 +107,30 @@ class G3CTCtlWindow(QMainWindow):
         max_time = QTime.fromString('23:59:59', 'hh:mm:ss')
         self.addWaterPeriod.setTimeRange(min_time, max_time)
         self.addWaterPeriod.setTime(min_time)
-        self.addWaterPeriod.setEnabled(False)
+        self.addWaterPeriod.setEnabled(True)
         self.addWaterCountDownLabel = QLabel("", self)
-        self.addWaterRepeatCheck = QCheckBox("Repeat Limit", self)
-        self.addWaterRepeatCheck.stateChanged.connect(self.addWaterRepeatStateChange)
-        self.addWaterRepeatCheck.setChecked(False)
+        #self.addWaterRepeatCheck = QCheckBox("Repeat Limit", self)
+        #self.addWaterRepeatCheck.stateChanged.connect(self.addWaterRepeatStateChange)
+        #self.addWaterRepeatCheck.setChecked(False)
+        self.waterRepeatCountLabel = QLabel("Repeat Count")
         self.addWaterRepeatCount = QSpinBox(self)
-        self.addWaterRepeatCount.setMinimum(1)
+        self.addWaterRepeatCount.setMinimum(0)
         self.addWaterRepeatCount.setMaximum(1000)
-        self.addWaterRepeatCount.setEnabled(False)
+        self.addWaterRepeatCount.setEnabled(True)
         self.addWaterRepeatCount.valueChanged.connect(self.addWaterRepeatCountChange)
         self.addWaterRepeatLabel = QLabel("", self)
 
         self.removeMaterialHeaderLabel = QLabel("DISCHARGE", self)
         self.removeMaterialHeaderLabel.setAlignment(Qt.AlignCenter)
         self.removeMaterialButton = QPushButton('Remove Material', self)
+        self.removeMaterialStopButton = QPushButton("Stop")
+        self.removeMaterialStopButton.setEnabled(False)
         self.removeMaterialButton.clicked.connect(self.removeMaterialClickMethod)
         self.removeMaterialStateLabel = QLabel("idle", self)
         self.removeMaterialStateLabel.setAlignment(Qt.AlignCenter)
-        self.removeMaterialAutoCheck = QCheckBox("Auto Run", self)
-        self.removeMaterialAutoCheck.stateChanged.connect(self.removeMaterialAutoStateChange)
-        self.removeMaterialAutoCheck.setChecked(False)
+        #self.removeMaterialAutoCheck = QCheckBox("Auto Run", self)
+        #self.removeMaterialAutoCheck.stateChanged.connect(self.removeMaterialAutoStateChange)
+        #self.removeMaterialAutoCheck.setChecked(False)
         self.removeMaterialPeriod = QTimeEdit(self)
         self.removeMaterialPeriod.setTimeSpec(Qt.LocalTime)
         self.removeMaterialPeriod.setDisplayFormat('hh:mm:ss')
@@ -128,7 +140,7 @@ class G3CTCtlWindow(QMainWindow):
         self.removeMaterialPeriod.setTime(min_time)
         self.removeMaterialPeriod.setEnabled(False)
         # temporary
-        self.removeMaterialAutoCheck.setEnabled(False)
+        #self.removeMaterialAutoCheck.setEnabled(False)
         self.removeMaterialPeriod.setEnabled(False)
         self.removeMaterialButton.setEnabled(False)
         self.removeMaterialCountDownLabel = QLabel("", self)
@@ -146,8 +158,9 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopBox = QVBoxLayout()
         self.startStopBox.addWidget(self.startStopHeaderLabel)
         self.startStopBox.addWidget(self.startStopButton)
+        self.startStopBox.addWidget(self.startStopStopButton)
         self.startStopBox.addWidget(self.startStopStateLabel)
-        self.startStopBox.addWidget(self.startStopAutoCheck)
+        #self.startStopBox.addWidget(self.startStopAutoCheck)
         self.startStopBox.addWidget(self.startStopPeriod)
         self.startStopBox.addWidget(self.startStopCountDownLabel)
         self.startStopBox.addStretch(1)
@@ -157,11 +170,13 @@ class G3CTCtlWindow(QMainWindow):
         self.addMaterialBox = QVBoxLayout()
         self.addMaterialBox.addWidget(self.addMaterialHeaderLabel)
         self.addMaterialBox.addWidget(self.addMaterialButton)
+        self.addMaterialBox.addWidget(self.addMaterialStopButton)
         self.addMaterialBox.addWidget(self.addMaterialStateLabel)
-        self.addMaterialBox.addWidget(self.addMaterialAutoCheck)
+        #self.addMaterialBox.addWidget(self.addMaterialAutoCheck)
         self.addMaterialBox.addWidget(self.addMaterialPeriod)
         self.addMaterialBox.addWidget(self.addMaterialCountDownLabel)
-        self.addMaterialBox.addWidget(self.addMaterialRepeatCheck)
+        #self.addMaterialBox.addWidget(self.addMaterialRepeatCheck)
+        self.addMaterialBox.addWidget(self.materialRepeatCountLabel)
         self.addMaterialBox.addWidget(self.addMaterialRepeatCount)
         self.addMaterialBox.addWidget(self.addMaterialRepeatLabel)
         self.manualButtonBox.addLayout(self.addMaterialBox)
@@ -170,11 +185,13 @@ class G3CTCtlWindow(QMainWindow):
         self.addWaterBox = QVBoxLayout()
         self.addWaterBox.addWidget(self.addWaterHeaderLabel)
         self.addWaterBox.addWidget(self.addWaterButton)
+        self.addWaterBox.addWidget(self.addWaterStopButton)
         self.addWaterBox.addWidget(self.addWaterStateLabel)
-        self.addWaterBox.addWidget(self.addWaterAutoCheck)
+        #self.addWaterBox.addWidget(self.addWaterAutoCheck)
         self.addWaterBox.addWidget(self.addWaterPeriod)
         self.addWaterBox.addWidget(self.addWaterCountDownLabel)
-        self.addWaterBox.addWidget(self.addWaterRepeatCheck)
+        #self.addWaterBox.addWidget(self.addWaterRepeatCheck)
+        self.addWaterBox.addWidget(self.waterRepeatCountLabel)
         self.addWaterBox.addWidget(self.addWaterRepeatCount)
         self.addWaterBox.addWidget(self.addWaterRepeatLabel)
         self.manualButtonBox.addLayout(self.addWaterBox)
@@ -183,8 +200,9 @@ class G3CTCtlWindow(QMainWindow):
         self.removeMaterialBox = QVBoxLayout()
         self.removeMaterialBox.addWidget(self.removeMaterialHeaderLabel)
         self.removeMaterialBox.addWidget(self.removeMaterialButton)
+        self.removeMaterialBox.addWidget(self.removeMaterialStopButton)
         self.removeMaterialBox.addWidget(self.removeMaterialStateLabel)
-        self.removeMaterialBox.addWidget(self.removeMaterialAutoCheck)
+        #self.removeMaterialBox.addWidget(self.removeMaterialAutoCheck)
         self.removeMaterialBox.addWidget(self.removeMaterialPeriod)
         self.removeMaterialBox.addWidget(self.removeMaterialCountDownLabel)
         self.removeMaterialBox.addStretch(1)
@@ -273,7 +291,11 @@ class G3CTCtlWindow(QMainWindow):
                     self.gui.enableDischargeValveControlButton()
                 mixer_state = core.getActualMixerState()
                 self.gui.setStartStopStateLabel(mixer_state)
-                time.sleep(1)
+                if self.core.getAddWaterState() != "idle":
+                    self.gui.addWaterButton.setEnabled(False)
+                else:
+                    self.gui.addWaterButton.setEnabled(True)
+                time.sleep(.5)
 
     def setAddMaterialCountDownLabel(self, text):
         self.addMaterialCountDownLabel.setText(text)
@@ -281,9 +303,9 @@ class G3CTCtlWindow(QMainWindow):
     def setAddMaterialRepeatLabel(self, text):
         self.addMaterialRepeatLabel.setText(text)
 
-    def cancelAddMaterialAutoRun(self):
-        self.addMaterialAutoCheck.setChecked(False)
-        self.addMaterialRepeatCheck.setChecked(False)
+    #def cancelAddMaterialAutoRun(self):
+        #self.addMaterialAutoCheck.setChecked(False)
+        #self.addMaterialRepeatCheck.setChecked(False)
 
     def setAddWaterCountDownLabel(self, text):
         self.addWaterCountDownLabel.setText(text)
@@ -292,8 +314,10 @@ class G3CTCtlWindow(QMainWindow):
         self.addWaterRepeatLabel.setText(text)
 
     def cancelAddWaterAutoRun(self):
-        self.addWaterAutoCheck.setChecked(False)
-        self.addWaterRepeatCheck.setChecked(False)
+        self.addWaterAutoStateChange(False)
+        self.addWaterRepeatStateChange(False)
+        #self.addWaterAutoCheck.setChecked(False)
+        #self.addWaterRepeatCheck.setChecked(False)
 
     def setRemoveMaterialCountDownLabel(self, text):
         self.removeMaterialCountDownLabel.setText(text)
@@ -320,12 +344,15 @@ class G3CTCtlWindow(QMainWindow):
             self.addWaterAutoRun = False
             self.addWaterPeriod = 0
             self.addWaterTriggerTime = QDateTime()
-            self.addWaterRepeatLimit = False
+            self.addWaterTriggerTime = QDateTime.currentDateTime()
+            self.waterButtonClick = False
+            self.addWaterRepeatLimit = True
             self.addWaterRepeatCount = 0
             self.addWaterRepeatIter = 0
             self.removeMaterialAutoRun = False
             self.removeMaterialPeriod = 0
             self.removeMaterialTriggerTime = QDateTime()
+            self.originalWaterState = False
 
         def setStopFlag(self):
             self.stopFlag = True
@@ -402,11 +429,22 @@ class G3CTCtlWindow(QMainWindow):
                             self.gui.addMaterialClickMethod()
 
                 if not self.addWaterAutoRun:
-                    self.gui.setAddWaterCountDownLabel("")
+                    if self.addWaterTriggerTime.__le__(QDateTime.currentDateTime()):
+                        self.gui.setAddWaterCountDownLabel("")
+                    else:
+                        self.gui.setAddWaterCountDownLabel("Finishing")
+                        if self.core.getAddWaterState() == "idle" and self.originalWaterState != self.gui.waterState:
+                            self.gui.setAddWaterCountDownLabel("Done")
+                            time.sleep(3)
+                            self.gui.setAddWaterCountDownLabel("")
+                        #if self.addWaterTriggerTime.__gt__(QDateTime.currentDateTime()):
+                            #rem = QDateTime.currentDateTime().secsTo(self.addWaterTriggerTime)
+                            #self.gui.setAddWaterCountDownLabel(str(rem) + ' seconds')
                 else:
                     if self.addWaterTriggerTime.__gt__(QDateTime.currentDateTime()):
                         rem = QDateTime.currentDateTime().secsTo(self.addWaterTriggerTime)
                         self.gui.setAddWaterCountDownLabel(str(rem) + ' seconds')
+                        self.originalWaterState = self.gui.waterState
                     else:
                         repeat_limit_reached = False
                         if self.addWaterRepeatLimit:
@@ -423,6 +461,7 @@ class G3CTCtlWindow(QMainWindow):
                             # emulate button press
                             self.gui.addWaterClickMethod()
 
+
                 if not self.removeMaterialAutoRun:
                     self.gui.setRemoveMaterialCountDownLabel("")
                 else:
@@ -434,7 +473,6 @@ class G3CTCtlWindow(QMainWindow):
                         self.gui.setRemoveMaterialCountDownLabel('triggering')
                         # emulate button press
                         self.gui.removeMaterialClickMethod()
-
                 time.sleep(1)
 
     def exitClickMethod(self):
@@ -528,34 +566,38 @@ class G3CTCtlWindow(QMainWindow):
 
     def addWaterAutoStateChange(self, state):
         print ('addWaterAuto state is ' + str(state))
-        if state == QtCore.Qt.Checked:
+        if state == True:
+            self.waterState = True
+            self.addWaterClickMethod()
+            self.waterButtonClick = True
             self.addWaterPeriod.setEnabled(True)
             self.addWaterButton.setEnabled(False)
+            self.addWaterStopButton.setEnabled(True)
             h = self.addWaterPeriod.time().hour()
             m = self.addWaterPeriod.time().minute()
             s = self.addWaterPeriod.time().second()
             period = (((h * 60) + m) * 60) + s
             self.autoRunThread.setAddWaterAutoRun(True, period)
         else:
+            self.waterState = False
             self.addWaterPeriod.setEnabled(False)
             self.addWaterButton.setEnabled(True)
+            self.addWaterStopButton.setEnabled(False)
             self.autoRunThread.setAddWaterAutoRun(False, 0)
 
     def addWaterRepeatStateChange(self, state):
         print ('addWaterRepeat state is ' + str(state))
-        if state == QtCore.Qt.Checked:
+        if state == True:
             self.addWaterRepeatCount.setEnabled(True)
             count = self.addWaterRepeatCount.value()
             self.autoRunThread.setAddWaterRepeatCount(True, count)
             self.addWaterRepeatLabel.setText("")
         else:
-            self.addWaterRepeatCount.setEnabled(False)
             self.autoRunThread.setAddWaterRepeatCount(False, 0)
 
     def addWaterRepeatCountChange(self):
-        if self.addWaterRepeatCheck.isChecked():
-            count = self.addWaterRepeatCount.value()
-            self.autoRunThread.setAddWaterRepeatCount(True, count)
+        count = self.addWaterRepeatCount.value()
+        self.autoRunThread.setAddWaterRepeatCount(True, count)
 
     def removeMaterialAutoStateChange(self, state):
         print ('removeMaterialAuto state is ' + str(state))
