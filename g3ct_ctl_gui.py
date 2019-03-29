@@ -12,8 +12,9 @@ class G3CTCtlWindow(QMainWindow):
     def __init__(self, core_arg):
         QMainWindow.__init__(self)
         self.core = core_arg
-        self.statusPollThread = G3CTCtlWindow.StatusPollThread(self, self.core)
         self.autoRunThread = G3CTCtlWindow.AutoRunThread(self, self.core)
+        self.statusPollThread = G3CTCtlWindow.StatusPollThread(self, self.core, self.autoRunThread)
+
 
         # coreState = core.getState()
 
@@ -36,7 +37,8 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopButton = QPushButton('Start Mixer', self)
         self.startStopStopButton = QPushButton("Stop")
         self.startStopStopButton.setEnabled(False)
-        self.startStopButton.clicked.connect(self.startStopClickMethod)
+        self.startStopButton.clicked.connect(lambda: self.startStopAutoStateChange(True))
+        self.startStopStopButton.clicked.connect(lambda: self.startStopAutoStateChange(False))
         self.startStopStateLabel = QLabel("idle", self)
         self.startStopStateLabel.setAlignment(Qt.AlignCenter)
         #self.startStopAutoCheck = QCheckBox("Auto Run", self)
@@ -49,19 +51,20 @@ class G3CTCtlWindow(QMainWindow):
         max_time = QTime.fromString('23:59:59', 'hh:mm:ss')
         self.startStopPeriod.setTimeRange(min_time, max_time)
         self.startStopPeriod.setTime(min_time)
-        self.startStopPeriod.setEnabled(False)
         self.startStopCountDownLabel = QLabel("", self)
         # temporary
         #self.startStopAutoCheck.setEnabled(False)
-        self.startStopPeriod.setEnabled(False)
-        self.startStopButton.setEnabled(False)
+        self.startStopPeriod.setEnabled(True)
+        self.startStopButton.setEnabled(True)
 
         self.addMaterialHeaderLabel = QLabel("SUPPLY", self)
         self.addMaterialHeaderLabel.setAlignment(Qt.AlignCenter)
         self.addMaterialButton = QPushButton('Add Material', self)
         self.addMaterialStopButton = QPushButton("Stop")
         self.addMaterialStopButton.setEnabled(False)
-        self.addMaterialButton.clicked.connect(self.addMaterialClickMethod)
+        self.addMaterialButton.clicked.connect(lambda: self.addMaterialAutoStateChange(True))
+        self.addMaterialStopButton.clicked.connect(lambda: self.addMaterialAutoStateChange(False))
+        self.materialState = False
         self.addMaterialStateLabel = QLabel("idle", self)
         self.addMaterialStateLabel.setAlignment(Qt.AlignCenter)
         #self.addMaterialAutoCheck = QCheckBox("Auto Run", self)
@@ -74,7 +77,7 @@ class G3CTCtlWindow(QMainWindow):
         max_time = QTime.fromString('23:59:59', 'hh:mm:ss')
         self.addMaterialPeriod.setTimeRange(min_time, max_time)
         self.addMaterialPeriod.setTime(min_time)
-        self.addMaterialPeriod.setEnabled(False)
+        self.addMaterialPeriod.setEnabled(True)
         self.addMaterialCountDownLabel = QLabel("", self)
         #self.addMaterialRepeatCheck = QCheckBox("Repeat Limit", self)
         #self.addMaterialRepeatCheck.stateChanged.connect(self.addMaterialRepeatStateChange)
@@ -125,7 +128,9 @@ class G3CTCtlWindow(QMainWindow):
         self.removeMaterialButton = QPushButton('Remove Material', self)
         self.removeMaterialStopButton = QPushButton("Stop")
         self.removeMaterialStopButton.setEnabled(False)
-        self.removeMaterialButton.clicked.connect(self.removeMaterialClickMethod)
+        self.removeMaterialButton.clicked.connect(lambda: self.removeMaterialAutoStateChange(True))
+        self.removeMaterialStopButton.clicked.connect(lambda: self.removeMaterialAutoStateChange(False))
+        self.removeState = False
         self.removeMaterialStateLabel = QLabel("idle", self)
         self.removeMaterialStateLabel.setAlignment(Qt.AlignCenter)
         #self.removeMaterialAutoCheck = QCheckBox("Auto Run", self)
@@ -141,8 +146,7 @@ class G3CTCtlWindow(QMainWindow):
         self.removeMaterialPeriod.setEnabled(False)
         # temporary
         #self.removeMaterialAutoCheck.setEnabled(False)
-        self.removeMaterialPeriod.setEnabled(False)
-        self.removeMaterialButton.setEnabled(False)
+        self.removeMaterialPeriod.setEnabled(True)
         self.removeMaterialCountDownLabel = QLabel("", self)
 
         self.dischargeValveControlHeaderLabel = QLabel("DISCHARGE VALVE", self)
@@ -267,43 +271,15 @@ class G3CTCtlWindow(QMainWindow):
     def setStartStopStateLabel(self, text):
         self.startStopStateLabel.setText(text)
 
-    class StatusPollThread(threading.Thread):
-        def __init__(self, gui, core_arg):
-            threading.Thread.__init__(self)
-            self.gui = gui
-            self.core = core_arg
-            self.stopFlag = False
-
-        def setStopFlag(self):
-            self.stopFlag = True
-
-        def run(self):
-            while not self.stopFlag:
-                add_water_state = self.core.getAddWaterState()
-                self.gui.setAddWaterStateLabel(add_water_state)
-                add_material_state = self.core.getAddMaterialState()
-                self.gui.setAddMaterialStateLabel(add_material_state)
-                remove_material_state = self.core.getRemoveMaterialState()
-                self.gui.setRemoveMaterialStateLabel(remove_material_state)
-                discharge_valve_state = self.core.getDischargeValveControlState()
-                self.gui.setDischargeValveControlStateLabel(discharge_valve_state)
-                if discharge_valve_state == "opened" or discharge_valve_state == "closed":
-                    self.gui.enableDischargeValveControlButton()
-                mixer_state = core.getActualMixerState()
-                self.gui.setStartStopStateLabel(mixer_state)
-                if self.core.getAddWaterState() != "idle":
-                    self.gui.addWaterButton.setEnabled(False)
-                else:
-                    self.gui.addWaterButton.setEnabled(True)
-                time.sleep(.5)
-
     def setAddMaterialCountDownLabel(self, text):
         self.addMaterialCountDownLabel.setText(text)
 
     def setAddMaterialRepeatLabel(self, text):
         self.addMaterialRepeatLabel.setText(text)
 
-    #def cancelAddMaterialAutoRun(self):
+    def cancelAddMaterialAutoRun(self):
+        self.addMaterialAutoStateChange(False)
+        self.addMaterialRepeatStateChange(False)
         #self.addMaterialAutoCheck.setChecked(False)
         #self.addMaterialRepeatCheck.setChecked(False)
 
@@ -335,16 +311,21 @@ class G3CTCtlWindow(QMainWindow):
             self.mixerAutoRun = False
             self.mixerPeriod = 0
             self.mixerTriggerTime = QDateTime()
+            self.mixerTriggerTime = QDateTime.currentDateTime()
+            self.originalMixerState = False
             self.addMaterialAutoRun = False
             self.addMaterialPeriod = 0
             self.addMaterialTriggerTime = QDateTime()
-            self.addMaterialRepeatLimit = False
+            self.addMaterialTriggerTime = QDateTime.currentDateTime()
+            self.addMaterialRepeatLimit = True
             self.addMaterialRepeatCount = 0
             self.addMaterialRepeatIter = 0
+            self.originalMaterialState = False
             self.addWaterAutoRun = False
             self.addWaterPeriod = 0
             self.addWaterTriggerTime = QDateTime()
             self.addWaterTriggerTime = QDateTime.currentDateTime()
+            self.originalWaterState = False
             self.waterButtonClick = False
             self.addWaterRepeatLimit = True
             self.addWaterRepeatCount = 0
@@ -352,7 +333,10 @@ class G3CTCtlWindow(QMainWindow):
             self.removeMaterialAutoRun = False
             self.removeMaterialPeriod = 0
             self.removeMaterialTriggerTime = QDateTime()
-            self.originalWaterState = False
+            self.removeMaterialTriggerTime = QDateTime.currentDateTime()
+            self.originalRemoveState = False
+            self.doneFlash = False
+
 
         def setStopFlag(self):
             self.stopFlag = True
@@ -395,11 +379,21 @@ class G3CTCtlWindow(QMainWindow):
             while not self.stopFlag:
 
                 if not self.mixerAutoRun:
-                    self.gui.setStartStopCountDownLabel("")
+                    if self.mixerTriggerTime.__le__(QDateTime.currentDateTime()):
+                        self.gui.setStartStopCountDownLabel("")
+                    else:
+                        self.gui.setStartStopCountDownLabel("Finishing")
+                        if self.core.getActualMixerState() == "stopped" and self.originalMixerState != self.gui.mixerState:
+                            rem = QDateTime.currentDateTime().secsTo(self.mixerTriggerTime)
+                            self.gui.setStartStopCountDownLabel("Done")
+                            time.sleep(3)
+                            self.gui.setStartStopCountDownLabel("")
+                            time.sleep(rem)
                 else:
                     if self.mixerTriggerTime.__gt__(QDateTime.currentDateTime()):
                         rem = QDateTime.currentDateTime().secsTo(self.mixerTriggerTime)
                         self.gui.setStartStopCountDownLabel(str(rem) + ' seconds')
+                        self.originalMixerState = self.gui.mixerState
                     else:
                         self.mixerTriggerTime = QDateTime.currentDateTime().addSecs(self.mixerPeriod)
                         self.gui.setStartStopCountDownLabel('triggering')
@@ -407,11 +401,21 @@ class G3CTCtlWindow(QMainWindow):
                         self.gui.startStopClickMethod()
 
                 if not self.addMaterialAutoRun:
-                    self.gui.setAddMaterialCountDownLabel("")
+                    if self.addMaterialTriggerTime.__le__(QDateTime.currentDateTime()):
+                        self.gui.setAddMaterialCountDownLabel("")
+                    else:
+                        self.gui.setAddMaterialCountDownLabel("Finishing")
+                        if self.core.getAddMaterialState() == "idle" and self.originalMaterialState != self.gui.materialState:
+                            rem = QDateTime.currentDateTime().secsTo(self.addMaterialTriggerTime)
+                            self.gui.setAddMaterialCountDownLabel("Done")
+                            time.sleep(3)
+                            self.gui.setAddMaterialCountDownLabel("")
+                            time.sleep(rem)
                 else:
                     if self.addMaterialTriggerTime.__gt__(QDateTime.currentDateTime()):
                         rem = QDateTime.currentDateTime().secsTo(self.addMaterialTriggerTime)
                         self.gui.setAddMaterialCountDownLabel(str(rem) + ' seconds')
+                        self.originalMaterialState = self.gui.materialState
                     else:
                         repeat_limit_reached = False
                         if self.addMaterialRepeatLimit:
@@ -434,12 +438,11 @@ class G3CTCtlWindow(QMainWindow):
                     else:
                         self.gui.setAddWaterCountDownLabel("Finishing")
                         if self.core.getAddWaterState() == "idle" and self.originalWaterState != self.gui.waterState:
+                            rem = QDateTime.currentDateTime().secsTo(self.addWaterTriggerTime)
                             self.gui.setAddWaterCountDownLabel("Done")
                             time.sleep(3)
                             self.gui.setAddWaterCountDownLabel("")
-                        #if self.addWaterTriggerTime.__gt__(QDateTime.currentDateTime()):
-                            #rem = QDateTime.currentDateTime().secsTo(self.addWaterTriggerTime)
-                            #self.gui.setAddWaterCountDownLabel(str(rem) + ' seconds')
+                            time.sleep(rem)
                 else:
                     if self.addWaterTriggerTime.__gt__(QDateTime.currentDateTime()):
                         rem = QDateTime.currentDateTime().secsTo(self.addWaterTriggerTime)
@@ -463,17 +466,79 @@ class G3CTCtlWindow(QMainWindow):
 
 
                 if not self.removeMaterialAutoRun:
-                    self.gui.setRemoveMaterialCountDownLabel("")
+                    if self.removeMaterialTriggerTime.__le__(QDateTime.currentDateTime()) \
+                            and self.core.getRemoveMaterialState() == "idle":
+                        self.gui.setRemoveMaterialCountDownLabel("")
+                        if self.originalRemoveState != self.gui.removeState and not self.doneFlash:
+                            self.gui.setRemoveMaterialCountDownLabel("Done")
+                            time.sleep(3)
+                            self.gui.setRemoveMaterialCountDownLabel("")
+                            self.doneFlash = True
+                    else:
+                        self.gui.setRemoveMaterialCountDownLabel("Finishing")
+                        if self.core.getRemoveMaterialState() == "idle" and self.originalRemoveState != self.gui.removeState:
+                            rem = QDateTime.currentDateTime().secsTo(self.removeMaterialTriggerTime)
+                            self.gui.setRemoveMaterialCountDownLabel("Done")
+                            time.sleep(3)
+                            self.gui.setRemoveMaterialCountDownLabel("")
+                            time.sleep(rem)
                 else:
                     if self.removeMaterialTriggerTime.__gt__(QDateTime.currentDateTime()):
+                        self.doneFlash = False
                         rem = QDateTime.currentDateTime().secsTo(self.removeMaterialTriggerTime)
                         self.gui.setRemoveMaterialCountDownLabel(str(rem) + ' seconds')
+                        self.originalRemoveState = self.gui.removeState
                     else:
                         self.removeMaterialTriggerTime = QDateTime.currentDateTime().addSecs(self.removeMaterialPeriod)
                         self.gui.setRemoveMaterialCountDownLabel('triggering')
                         # emulate button press
                         self.gui.removeMaterialClickMethod()
                 time.sleep(1)
+
+
+    class StatusPollThread(threading.Thread):
+        def __init__(self, gui, core_arg, autorun):
+            threading.Thread.__init__(self)
+            self.autorun = autorun
+            self.gui = gui
+            self.core = core_arg
+            self.stopFlag = False
+
+        def setStopFlag(self):
+            self.stopFlag = True
+
+        def run(self):
+            while not self.stopFlag:
+                add_water_state = self.core.getAddWaterState()
+                self.gui.setAddWaterStateLabel(add_water_state)
+                add_material_state = self.core.getAddMaterialState()
+                self.gui.setAddMaterialStateLabel(add_material_state)
+                remove_material_state = self.core.getRemoveMaterialState()
+                self.gui.setRemoveMaterialStateLabel(remove_material_state)
+                discharge_valve_state = self.core.getDischargeValveControlState()
+                self.gui.setDischargeValveControlStateLabel(discharge_valve_state)
+                if discharge_valve_state == "opened" or discharge_valve_state == "closed":
+                    self.gui.enableDischargeValveControlButton()
+                mixer_state = core.getActualMixerState()
+                self.gui.setStartStopStateLabel(mixer_state)
+                if self.core.getAddWaterState() != "idle" or self.autorun.addWaterAutoRun:
+                    self.gui.addWaterButton.setEnabled(False)
+                else:
+                    self.gui.addWaterButton.setEnabled(True)
+                if self.core.getAddMaterialState() != "idle" or self.autorun.addMaterialAutoRun:
+                    self.gui.addMaterialButton.setEnabled(False)
+                else:
+                    self.gui.addMaterialButton.setEnabled(True)
+                if self.core.getActualMixerState() != "stopped" or self.autorun.mixerAutoRun:
+                    self.gui.startStopButton.setEnabled(False)
+                else:
+                    self.gui.startStopButton.setEnabled(True)
+                if self.core.getRemoveMaterialState() != "idle" or self.autorun.removeMaterialAutoRun:
+                    self.gui.removeMaterialButton.setEnabled(False)
+                else:
+                    self.gui.removeMaterialButton.setEnabled(True)
+                time.sleep(.5)
+
 
     def exitClickMethod(self):
         print('Clicked exit button.')
@@ -518,24 +583,34 @@ class G3CTCtlWindow(QMainWindow):
 
     def startStopAutoStateChange(self, state):
         print ('startStopAuto state is ' + str(state))
-        if state == QtCore.Qt.Checked:
-            self.startStopPeriod.setEnabled(True)
+        self.startStopClickMethod()
+        if state == True:
+            self.mixerState = True
+            self.startStopPeriod.setEnabled(False)
             self.startStopButton.setEnabled(False)
+            self.startStopStopButton.setEnabled(True)
             h = self.startStopPeriod.time().hour()
             m = self.startStopPeriod.time().minute()
             s = self.startStopPeriod.time().second()
             period = (((h * 60) + m) * 60) + s
             self.autoRunThread.setMixerAutoRun(True, period)
         else:
-            self.startStopPeriod.setEnabled(False)
+            self.mixerState = False
+            self.startStopStopButton.setEnabled(False)
+            self.startStopPeriod.setEnabled(True)
             self.startStopButton.setEnabled(True)
             self.autoRunThread.setMixerAutoRun(False, 0)
 
     def addMaterialAutoStateChange(self, state):
         print ('addMaterialAuto state is ' + str(state))
-        if state == QtCore.Qt.Checked:
-            self.addMaterialPeriod.setEnabled(True)
+        if state == True:
+            self.addMaterialRepeatStateChange(True)
+            self.materialState = True
+            self.addMaterialClickMethod()
+            self.addMaterialPeriod.setEnabled(False)
             self.addMaterialButton.setEnabled(False)
+            self.addMaterialStopButton.setEnabled(True)
+            self.addMaterialRepeatCount.setEnabled(False)
             print self.addMaterialPeriod.time()
             h = self.addMaterialPeriod.time().hour()
             m = self.addMaterialPeriod.time().minute()
@@ -544,35 +619,38 @@ class G3CTCtlWindow(QMainWindow):
             period = (((h * 60) + m) * 60) + s
             self.autoRunThread.setAddMaterialAutoRun(True, period)
         else:
-            self.addMaterialPeriod.setEnabled(False)
+            self.materialState = False
+            self.addMaterialRepeatCount.setEnabled(True)
+            self.addMaterialPeriod.setEnabled(True)
             self.addMaterialButton.setEnabled(True)
+            self.addMaterialStopButton.setEnabled(False)
             self.autoRunThread.setAddMaterialAutoRun(False, 0)
 
     def addMaterialRepeatStateChange(self, state):
         print ('addMaterialRepeat state is ' + str(state))
-        if state == QtCore.Qt.Checked:
+        if state == True:
             self.addMaterialRepeatCount.setEnabled(True)
             count = self.addMaterialRepeatCount.value()
             self.autoRunThread.setAddMaterialRepeatCount(True, count)
             self.addMaterialRepeatLabel.setText("")
         else:
-            self.addMaterialRepeatCount.setEnabled(False)
             self.autoRunThread.setAddMaterialRepeatCount(False, 0)
 
     def addMaterialRepeatCountChange(self):
-        if self.addMaterialRepeatCheck.isChecked():
-            count = self.addMaterialRepeatCount.value()
-            self.autoRunThread.setAddMaterialRepeatCount(True, count)
+        count = self.addMaterialRepeatCount.value()
+        self.autoRunThread.setAddMaterialRepeatCount(True, count)
 
     def addWaterAutoStateChange(self, state):
         print ('addWaterAuto state is ' + str(state))
         if state == True:
+            self.addWaterRepeatStateChange(True)
             self.waterState = True
             self.addWaterClickMethod()
             self.waterButtonClick = True
-            self.addWaterPeriod.setEnabled(True)
+            self.addWaterPeriod.setEnabled(False)
             self.addWaterButton.setEnabled(False)
             self.addWaterStopButton.setEnabled(True)
+            self.addWaterRepeatCount.setEnabled(False)
             h = self.addWaterPeriod.time().hour()
             m = self.addWaterPeriod.time().minute()
             s = self.addWaterPeriod.time().second()
@@ -580,7 +658,8 @@ class G3CTCtlWindow(QMainWindow):
             self.autoRunThread.setAddWaterAutoRun(True, period)
         else:
             self.waterState = False
-            self.addWaterPeriod.setEnabled(False)
+            self.addWaterRepeatCount.setEnabled(True)
+            self.addWaterPeriod.setEnabled(True)
             self.addWaterButton.setEnabled(True)
             self.addWaterStopButton.setEnabled(False)
             self.autoRunThread.setAddWaterAutoRun(False, 0)
@@ -601,8 +680,11 @@ class G3CTCtlWindow(QMainWindow):
 
     def removeMaterialAutoStateChange(self, state):
         print ('removeMaterialAuto state is ' + str(state))
-        if state == QtCore.Qt.Checked:
-            self.removeMaterialPeriod.setEnabled(True)
+        if state == True:
+            self.removeMaterialPeriod.setEnabled(False)
+            self.removeState = True
+            self.removeMaterialClickMethod()
+            self.removeMaterialStopButton.setEnabled(True)
             self.removeMaterialButton.setEnabled(False)
             h = self.removeMaterialPeriod.time().hour()
             m = self.removeMaterialPeriod.time().minute()
@@ -610,7 +692,9 @@ class G3CTCtlWindow(QMainWindow):
             period = (((h * 60) + m) * 60) + s
             self.autoRunThread.setRemoveMaterialAutoRun(True, period)
         else:
-            self.removeMaterialPeriod.setEnabled(False)
+            self.removeState = False
+            self.removeMaterialStopButton.setEnabled(False)
+            self.removeMaterialPeriod.setEnabled(True)
             self.removeMaterialButton.setEnabled(True)
             self.autoRunThread.setRemoveMaterialAutoRun(False, 0)
 
