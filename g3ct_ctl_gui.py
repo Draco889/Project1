@@ -37,25 +37,13 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopButton = QPushButton('Start Mixer', self)
         self.startStopStopButton = QPushButton("Stop")
         self.startStopStopButton.setEnabled(False)
-        self.startStopButton.clicked.connect(lambda: self.startStopAutoStateChange(True))
-        self.startStopStopButton.clicked.connect(lambda: self.startStopAutoStateChange(False))
+        self.startStopButton.clicked.connect(self.startStopClickMethod)
+        self.startStopStopButton.clicked.connect(self.startStopClickMethod)
         self.startStopStateLabel = QLabel("idle", self)
         self.startStopStateLabel.setAlignment(Qt.AlignCenter)
-        #self.startStopAutoCheck = QCheckBox("Auto Run", self)
-        #self.startStopAutoCheck.stateChanged.connect(self.startStopAutoStateChange)
-        #self.startStopAutoCheck.setChecked(False)
-        self.startStopPeriod = QTimeEdit(self)
-        self.startStopPeriod.setTimeSpec(Qt.LocalTime)
-        self.startStopPeriod.setDisplayFormat('hh:mm:ss')
-        min_time = QTime.fromString('00:01:00', 'hh:mm:ss')
-        max_time = QTime.fromString('23:59:59', 'hh:mm:ss')
-        self.startStopPeriod.setTimeRange(min_time, max_time)
-        self.startStopPeriod.setTime(min_time)
         self.startStopCountDownLabel = QLabel("", self)
-        # temporary
-        #self.startStopAutoCheck.setEnabled(False)
-        self.startStopPeriod.setEnabled(True)
         self.startStopButton.setEnabled(True)
+        self.mixerState = False
 
         self.addMaterialHeaderLabel = QLabel("SUPPLY", self)
         self.addMaterialHeaderLabel.setAlignment(Qt.AlignCenter)
@@ -165,7 +153,7 @@ class G3CTCtlWindow(QMainWindow):
         self.startStopBox.addWidget(self.startStopStopButton)
         self.startStopBox.addWidget(self.startStopStateLabel)
         #self.startStopBox.addWidget(self.startStopAutoCheck)
-        self.startStopBox.addWidget(self.startStopPeriod)
+        self.startStopBox.addStretch(1)
         self.startStopBox.addWidget(self.startStopCountDownLabel)
         self.startStopBox.addStretch(1)
         self.manualButtonBox.addLayout(self.startStopBox)
@@ -308,11 +296,6 @@ class G3CTCtlWindow(QMainWindow):
             self.core = core_arg
             self.stopFlag = False
 
-            self.mixerAutoRun = False
-            self.mixerPeriod = 0
-            self.mixerTriggerTime = QDateTime()
-            self.mixerTriggerTime = QDateTime.currentDateTime()
-            self.originalMixerState = False
             self.addMaterialAutoRun = False
             self.addMaterialPeriod = 0
             self.addMaterialTriggerTime = QDateTime()
@@ -377,28 +360,6 @@ class G3CTCtlWindow(QMainWindow):
 
         def run(self):
             while not self.stopFlag:
-
-                if not self.mixerAutoRun:
-                    if self.mixerTriggerTime.__le__(QDateTime.currentDateTime()):
-                        self.gui.setStartStopCountDownLabel("")
-                    else:
-                        self.gui.setStartStopCountDownLabel("Finishing")
-                        if self.core.getActualMixerState() == "stopped" and self.originalMixerState != self.gui.mixerState:
-                            rem = QDateTime.currentDateTime().secsTo(self.mixerTriggerTime)
-                            self.gui.setStartStopCountDownLabel("Done")
-                            time.sleep(3)
-                            self.gui.setStartStopCountDownLabel("")
-                            time.sleep(rem)
-                else:
-                    if self.mixerTriggerTime.__gt__(QDateTime.currentDateTime()):
-                        rem = QDateTime.currentDateTime().secsTo(self.mixerTriggerTime)
-                        self.gui.setStartStopCountDownLabel(str(rem) + ' seconds')
-                        self.originalMixerState = self.gui.mixerState
-                    else:
-                        self.mixerTriggerTime = QDateTime.currentDateTime().addSecs(self.mixerPeriod)
-                        self.gui.setStartStopCountDownLabel('triggering')
-                        # emulate button press
-                        self.gui.startStopClickMethod()
 
                 if not self.addMaterialAutoRun:
                     if self.addMaterialTriggerTime.__le__(QDateTime.currentDateTime()):
@@ -503,6 +464,7 @@ class G3CTCtlWindow(QMainWindow):
             self.gui = gui
             self.core = core_arg
             self.stopFlag = False
+            self.originalMixerState = False
 
         def setStopFlag(self):
             self.stopFlag = True
@@ -529,10 +491,15 @@ class G3CTCtlWindow(QMainWindow):
                     self.gui.addMaterialButton.setEnabled(False)
                 else:
                     self.gui.addMaterialButton.setEnabled(True)
-                if self.core.getActualMixerState() != "stopped" or self.autorun.mixerAutoRun:
+                if self.core.getActualMixerState() != "stopped":
                     self.gui.startStopButton.setEnabled(False)
+                    if self.gui.mixerState != self.originalMixerState:
+                        self.gui.startStopStopButton.setEnabled(True)
+                    else:
+                        self.gui.startStopStopButton.setEnabled(False)
                 else:
                     self.gui.startStopButton.setEnabled(True)
+                    self.gui.startStopStopButton.setEnabled(False)
                 if self.core.getRemoveMaterialState() != "idle" or self.autorun.removeMaterialAutoRun:
                     self.gui.removeMaterialButton.setEnabled(False)
                 else:
@@ -555,9 +522,9 @@ class G3CTCtlWindow(QMainWindow):
         print('Clicked startStop button.')
         self.core.startStopMixer()
         if self.core.getCommandedMixerState() == "stop":
-            self.startStopButton.setText("Start Mixer")
+            self.mixerState = False
         else:
-            self.startStopButton.setText("Stop Mixer")
+            self.mixerState = True
 
     def addMaterialClickMethod(self):
         print('Clicked addMaterial button.')
@@ -581,25 +548,6 @@ class G3CTCtlWindow(QMainWindow):
         # disable the button until operation is complete
         self.dischargeValveControlButton.setEnabled(False)
 
-    def startStopAutoStateChange(self, state):
-        print ('startStopAuto state is ' + str(state))
-        self.startStopClickMethod()
-        if state == True:
-            self.mixerState = True
-            self.startStopPeriod.setEnabled(False)
-            self.startStopButton.setEnabled(False)
-            self.startStopStopButton.setEnabled(True)
-            h = self.startStopPeriod.time().hour()
-            m = self.startStopPeriod.time().minute()
-            s = self.startStopPeriod.time().second()
-            period = (((h * 60) + m) * 60) + s
-            self.autoRunThread.setMixerAutoRun(True, period)
-        else:
-            self.mixerState = False
-            self.startStopStopButton.setEnabled(False)
-            self.startStopPeriod.setEnabled(True)
-            self.startStopButton.setEnabled(True)
-            self.autoRunThread.setMixerAutoRun(False, 0)
 
     def addMaterialAutoStateChange(self, state):
         print ('addMaterialAuto state is ' + str(state))
